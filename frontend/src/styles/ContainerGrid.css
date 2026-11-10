@@ -1,0 +1,523 @@
+.containers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.container-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.container-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.container-card:hover::before {
+  opacity: 1;
+}
+
+.container-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+  border-color: #3b82f6;
+}
+
+.container-card.selected {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+
+.container-card.selected::before {
+  opacity: 1;
+}
+
+/* GitHub Container Styles */
+.container-card.github-container {
+  border-left: 4px solid #6e5494;
+  background: linear-gradient(135deg, #ffffff 0%, #faf8ff 100%);
+}
+
+.container-card.github-container::before {
+  background: linear-gradient(90deg, #6e5494, #8a63d2);
+}
+
+.container-card.github-container:hover {
+  border-color: #6e5494;
+  box-shadow: 0 8px 25px -8px rgba(110, 84, 148, 0.15);
+}
+
+.container-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.container-name-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.container-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.container-name-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.container-name {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1.1rem;
+  word-break: break-word;
+}
+
+.github-badge {
+  background: linear-gradient(135deg, #6e5494, #8a63d2);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-running {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.badge-stopped {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.badge-created {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.badge-paused {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+}
+
+.badge-unknown {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  color: white;
+}
+
+.debug-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.debug-btn:hover {
+  opacity: 1;
+  background: #4b5563;
+  transform: scale(1.05);
+}
+
+.container-details {
+  margin-bottom: 16px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.detail-value {
+  color: #374151;
+  font-size: 0.875rem;
+  text-align: right;
+  word-break: break-word;
+  flex: 1;
+}
+
+.detail-value.image-name {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: #f8fafc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.detail-value.ports {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  color: #059669;
+  font-weight: 500;
+}
+
+.port-mapping {
+  display: inline-block;
+  background: #e5e7eb;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 2px;
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: #374151;
+}
+
+/* Debug Information Styles */
+.debug-info {
+  margin-top: 12px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+  display: none;
+}
+
+.debug-info.always-visible {
+  display: block;
+}
+
+.container-card:hover .debug-info:not(.always-visible) {
+  display: block;
+}
+
+.debug-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  padding: 2px 0;
+}
+
+.debug-item:last-child {
+  margin-bottom: 0;
+}
+
+.debug-label {
+  font-weight: 600;
+  color: #6b7280;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.debug-value {
+  color: #374151;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: #f1f5f9;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.container-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  justify-content: center;
+  min-width: 70px;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.action-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn.btn-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.action-btn.btn-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.action-btn.btn-secondary {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+}
+
+.action-btn.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.action-btn.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+.action-btn.btn-debug {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+}
+
+.action-btn.btn-sm {
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  min-width: 60px;
+}
+
+/* Loading animation */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+  color: #374151;
+}
+
+.empty-state p {
+  font-size: 0.875rem;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .containers-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .container-card {
+    padding: 16px;
+  }
+  
+  .container-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .header-right {
+    align-self: flex-start;
+    margin-top: 4px;
+  }
+  
+  .status-badge {
+    align-self: flex-start;
+  }
+  
+  .detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  
+  .detail-value {
+    text-align: left;
+  }
+  
+  .container-actions {
+    justify-content: center;
+  }
+  
+  .action-btn {
+    flex: none;
+    min-width: 80px;
+  }
+  
+  .debug-info {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container-actions {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .container-name-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .github-badge {
+    align-self: flex-start;
+  }
+}
+
+/* Animation for container updates */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.container-card {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Status-specific hover effects */
+.container-card:hover .badge-running {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.container-card:hover .badge-stopped {
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.container-card:hover .badge-created {
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* Enhanced debug visibility for GitHub containers */
+.container-card.github-container .debug-info {
+  border-color: #d6bcfa;
+  background: #faf5ff;
+}
+
+.container-card.github-container .debug-label {
+  color: #6e5494;
+}
+
+.container-card.github-container .debug-value {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+/* Focus states for accessibility */
+.action-btn:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.debug-btn:focus {
+  outline: 2px solid #6b7280;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for all interactive elements */
+.container-card,
+.action-btn,
+.debug-btn,
+.status-badge {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Container state indicators */
+.container-card[data-state="running"] {
+  border-left-color: #10b981;
+}
+
+.container-card[data-state="stopped"] {
+  border-left-color: #ef4444;
+}
+
+.container-card[data-state="created"] {
+  border-left-color: #f59e0b;
+}

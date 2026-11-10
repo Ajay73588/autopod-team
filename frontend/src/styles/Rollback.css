@@ -1,0 +1,114 @@
+.rollback-page {
+  padding: 1.5rem;
+}
+
+.current-version-banner {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: #1e40af;
+}
+
+.rollback-result {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.rollback-result-ok {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.rollback-result-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.versions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.version-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+}
+
+.version-row-current {
+  border-color: #93c5fd;
+  background: #f0f7ff;
+}
+
+.version-info {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.version-tag {
+  font-weight: 600;
+}
+
+.version-commit {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.version-date {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.current-pill {
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.rollback-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.rollback-confirm-dialog {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.5rem;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.rollback-confirm-dialog h3 {
+  margin-top: 0;
+}
+
+.rollback-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}

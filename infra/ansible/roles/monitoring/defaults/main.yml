@@ -1,0 +1,26 @@
+---
+# AutoPod Cloud -- Monitoring role defaults
+
+# Whether to use AWS EC2 dynamic service discovery for Prometheus.
+# When true (default in production), Prometheus discovers app nodes via ec2_sd_configs.
+# When false, Prometheus falls back to static targets from the Ansible inventory.
+monitoring_use_ec2_sd: true
+
+# AWS region for EC2 service discovery
+aws_region: "us-east-1"
+
+# Service discovery refresh interval (default: 30s)
+monitoring_sd_refresh_interval: "30s"
+
+# Target filters for application nodes
+monitoring_app_node_tag_role: "app-node"
+monitoring_app_node_asg_name: "autopod-app-nodes-asg"
+
+# Exporter ports
+node_exporter_port: 9100
+cadvisor_port: 8080
+prometheus_port: 9090
+grafana_port: 3001
+
+# Grafana admin credentials
+grafana_admin_password: "changeme-set-grafana-admin-password-in-vars"

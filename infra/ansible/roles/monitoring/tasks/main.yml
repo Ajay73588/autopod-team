@@ -1,0 +1,87 @@
+---
+# AutoPod Cloud -- monitoring role.
+# ARCHITECTURE.md Section 11.1: node_exporter on every host; cAdvisor on
+# app nodes only; Prometheus + Grafana on the control plane only.
+#
+# Requires the community.docker collection (see
+# infra/ansible/requirements.yml) -- every exporter/service here runs as
+# a container rather than a native package, keeping this role's only
+# dependency "Docker is installed" (already satisfied by the docker role,
+# which always runs first in site.yml).
+#
+# SECURITY (explicit project requirement: "without publicly exposing
+# exporter/Prometheus/Grafana ports"): every port binding below binds to
+# 127.0.0.1 or (for node_exporter/cAdvisor) relies on the app-node
+# security group only allowing the control plane's own security group to
+# reach ports 9100/8080 (infra/terraform/security.tf) -- NOT 0.0.0.0. No
+# monitoring port is ever bound to a publicly-reachable interface.
+
+- name: Node_exporter -- run on every host (control plane and app nodes)
+  community.docker.docker_container:
+    name: node_exporter
+    image: prom/node-exporter:v1.8.2
+    restart_policy: unless-stopped
+    ports:
+      - "9100:9100"
+    pid_mode: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command: >-
+      --path.procfs=/host/proc
+      --path.sysfs=/host/sys
+      --path.rootfs=/rootfs
+
+- name: Cadvisor -- app nodes only (per-container metrics)
+  community.docker.docker_container:
+    name: cadvisor
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    restart_policy: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+  when: inventory_hostname in groups['app_nodes']
+
+- name: Prometheus config directory -- control plane only
+  ansible.builtin.file:
+    path: /opt/autopod/prometheus
+    state: directory
+    mode: "0755"
+  when: inventory_hostname in groups['control_plane']
+
+- name: Render prometheus.yml -- scrapes every app node + itself (control plane only)
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /opt/autopod/prometheus/prometheus.yml
+    mode: "0644"
+  when: inventory_hostname in groups['control_plane']
+  notify: Restart prometheus
+
+- name: Prometheus -- control plane only, loopback-bound only (never public)
+  community.docker.docker_container:
+    name: prometheus
+    image: prom/prometheus:v2.54.1
+    restart_policy: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - /opt/autopod/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    env:
+      AWS_REGION: "{{ aws_region | default('us-east-1') }}"
+  when: inventory_hostname in groups['control_plane']
+
+- name: Grafana -- control plane only, loopback-bound only (never public)
+  community.docker.docker_container:
+    name: grafana
+    image: grafana/grafana:11.2.0
+    restart_policy: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+    env:
+      GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password | default('changeme-set-grafana-admin-password-in-vars') }}"
+  when: inventory_hostname in groups['control_plane']

@@ -1,0 +1,10 @@
+services:
+  autopod-backend:
+    ports:
+      - "{{ autopod_backend_internal_host | default('127.0.0.1') }}:{{ autopod_backend_port | default('5000') }}:5000"
+    restart: always
+
+  autopod-frontend:
+    ports:
+      - "{{ autopod_frontend_internal_host | default('127.0.0.1') }}:{{ autopod_frontend_internal_port | default('3000') }}:3000"
+    restart: always

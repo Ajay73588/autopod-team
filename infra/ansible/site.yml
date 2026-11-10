@@ -1,0 +1,36 @@
+---
+# AutoPod Cloud -- main playbook.
+# ARCHITECTURE.md Section 5.2: three roles, each with one clear job, run
+# against the two host groups Terraform's outputs feed into inventory.ini.
+# Run AFTER `terraform apply` -- this playbook configures hosts that
+# already exist; it never creates AWS resources itself.
+#
+# Usage (from infra/ansible/):
+#   ansible-playbook site.yml
+# Dry run (no changes made, just shows what would change):
+#   ansible-playbook site.yml --check --diff
+
+- name: Configure Docker Engine on every AutoPod host
+  hosts: control_plane:app_nodes
+  become: true
+  roles:
+    - docker
+
+- name: Configure monitoring (node_exporter everywhere; Prometheus/Grafana + cAdvisor split by role)
+  hosts: control_plane:app_nodes
+  become: true
+  roles:
+    - monitoring
+
+- name: Configure the restricted autopod-deploy SSH user on application nodes
+  hosts: app_nodes
+  become: true
+  roles:
+    - deployment
+
+- name: Deploy and manage AutoPod application on the control plane
+  hosts: control_plane
+  become: true
+  roles:
+    - autopod
+

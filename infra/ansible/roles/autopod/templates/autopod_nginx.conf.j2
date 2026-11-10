@@ -1,0 +1,113 @@
+# AutoPod Cloud -- Nginx reverse proxy configuration.
+# Managed by Ansible role `autopod`. Do not edit directly on the host.
+#
+# Security Architecture (Resolving D6):
+# 1. Public traffic is strictly limited to exact matches for:
+#    - /webhook (GitHub webhook deliveries, protected by HMAC-SHA256 signature)
+#    - /health  (Readiness health probes)
+# 2. Administrative access to the Dashboard (/) and API (/api/) is protected by
+#    an administrator IP/CIDR allowlist (and internal VPC CIDR for ASG bootstrap).
+# 3. If autopod_admin_cidr is unset or empty, the proxy fails safely by denying
+#    all non-loopback clients.
+# 4. Direct public exposure to Flask port 5000 is eliminated; Flask binds to 127.0.0.1.
+
+server {
+    listen {{ autopod_nginx_port | default(80) }} default_server;
+    listen [::]:{{ autopod_nginx_port | default(80) }} default_server;
+    server_name _;
+
+    client_max_body_size 50M;
+
+    # -------------------------------------------------------------------------
+    # Public Endpoints (Exact Match Only)
+    # -------------------------------------------------------------------------
+
+    # Exact match for GitHub webhook deliveries.
+    # Authenticated at application layer via HMAC-SHA256 signature verification.
+    location = /webhook {
+        proxy_pass http://{{ autopod_backend_internal_host | default('127.0.0.1') }}:{{ autopod_backend_port | default(5000) }}/webhook;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 60s;
+    }
+
+    # Exact match for health check probe (used by ALB/monitoring/local readiness).
+    location = /health {
+        proxy_pass http://{{ autopod_backend_internal_host | default('127.0.0.1') }}:{{ autopod_backend_port | default(5000) }}/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 10s;
+        proxy_connect_timeout 5s;
+    }
+
+    # -------------------------------------------------------------------------
+    # Protected API Endpoints (Admin CIDR + Internal VPC CIDR Restricted)
+    # -------------------------------------------------------------------------
+
+    location /api/ {
+        # Loopback access for local scripts, CLI tools, and health checks
+        allow 127.0.0.1;
+        allow ::1;
+
+        # Internal VPC CIDR: allows ASG application nodes to query version metadata during bootstrap
+{% if autopod_vpc_cidr is defined and autopod_vpc_cidr and autopod_vpc_cidr | string | trim | length > 0 %}
+        allow {{ autopod_vpc_cidr }};
+{% endif %}
+
+        # Administrator IP/CIDR allowlist
+{% if autopod_admin_cidr is defined and autopod_admin_cidr and autopod_admin_cidr | string | trim | length > 0 %}
+        allow {{ autopod_admin_cidr }};
+{% endif %}
+
+        # If admin CIDR is unset or client is not allowlisted, fail safely with 403 Forbidden
+        deny all;
+
+        proxy_pass http://{{ autopod_backend_internal_host | default('127.0.0.1') }}:{{ autopod_backend_port | default(5000) }}/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Disable buffering for Server-Sent Events (/api/logs/stream)
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 3600s;
+    }
+
+    # -------------------------------------------------------------------------
+    # Protected Frontend Dashboard (Admin CIDR Restricted)
+    # -------------------------------------------------------------------------
+
+    location / {
+        # Loopback access
+        allow 127.0.0.1;
+        allow ::1;
+
+        # Administrator IP/CIDR allowlist
+{% if autopod_admin_cidr is defined and autopod_admin_cidr and autopod_admin_cidr | string | trim | length > 0 %}
+        allow {{ autopod_admin_cidr }};
+{% endif %}
+
+        # If admin CIDR is unset or client is not allowlisted, fail safely with 403 Forbidden
+        deny all;
+
+        proxy_pass http://{{ autopod_frontend_internal_host | default('127.0.0.1') }}:{{ autopod_frontend_internal_port | default(3000) }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket support for live development / dashboard updates
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}

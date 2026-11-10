@@ -1,0 +1,22 @@
+---
+# AutoPod Cloud -- autopod role default variables
+autopod_install_dir: /opt/autopod
+autopod_repo_url: ""
+autopod_git_branch: main
+autopod_docker_gid: "992"
+autopod_allowed_origins: "*"
+autopod_admin_api_key: ""
+autopod_webhook_secret: ""
+autopod_docker_username: ""
+autopod_docker_password: ""
+autopod_db_path: /app/database/autopod.db
+autopod_app_name: autopod
+autopod_backend_port: 5000
+autopod_backend_internal_host: "127.0.0.1"
+autopod_frontend_internal_port: 3000
+autopod_frontend_internal_host: "127.0.0.1"
+autopod_frontend_port: 3000
+autopod_nginx_port: 80
+autopod_admin_cidr: ""
+autopod_vpc_cidr: "10.0.0.0/16"
+

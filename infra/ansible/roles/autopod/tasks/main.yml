@@ -1,0 +1,210 @@
+---
+# AutoPod Cloud -- autopod application role.
+# ARCHITECTURE.md Section 5.2 / Defect D5 fix: Ansible is responsible for
+# deploying AutoPod itself (backend + frontend) on the control-plane EC2
+# instance. Terraform provisions the bare instance; this role finishes it.
+#
+# Design decisions:
+#  - Docker Compose is used to run backend + frontend together, matching the
+#    existing `docker-compose.yml` and production `docker-compose.prod.yml`.
+#  - A systemd service (`autopod.service`) wraps Docker Compose so AutoPod
+#    restarts automatically after an instance reboot.
+#  - The .env file is rendered from Ansible variables (never from a
+#    hardcoded file in the repo) so secrets are never stored in VCS.
+#  - The database is stored in a named Docker volume (`autopod_db`) that
+#    survives container restarts and docker-compose recreation.
+#  - This role is idempotent: re-running it on an already-configured host
+#    is safe and updates the running application if the image/config changed.
+#
+# Prerequisites (satisfied by roles that run before this in site.yml):
+#  - Docker Engine is installed and running (docker role).
+#  - ec2-user is in the docker group (docker role).
+#
+# Variables (define in host_vars/group_vars or passed via --extra-vars):
+#  autopod_admin_api_key    -- REQUIRED: the admin API key secret
+#  autopod_webhook_secret   -- REQUIRED: GitHub HMAC webhook secret
+#  autopod_docker_username  -- optional: Docker Hub username for image push
+#  autopod_docker_password  -- optional: Docker Hub password (never logged)
+#  autopod_allowed_origins  -- optional: comma-separated CORS origins
+#  autopod_repo_url         -- Git repo to clone (defaults to a placeholder)
+#  autopod_install_dir      -- directory to clone/copy the repo into
+#  autopod_docker_gid       -- GID of the `docker` group on this host
+
+- name: Verify required secrets are provided
+  ansible.builtin.assert:
+    that:
+      - autopod_admin_api_key is defined
+      - autopod_admin_api_key | length > 0
+      - autopod_webhook_secret is defined
+      - autopod_webhook_secret | length > 0
+    fail_msg: >
+      autopod_admin_api_key and autopod_webhook_secret must be set via
+      Ansible host_vars or --extra-vars before running this role.
+      See infra/ansible/roles/autopod/README.md.
+    quiet: true
+
+- name: Create the AutoPod installation directory
+  ansible.builtin.file:
+    path: "{{ autopod_install_dir }}"
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+    mode: "0750"
+
+- name: Clone or update the AutoPod repository
+  ansible.builtin.git:
+    repo: "{{ autopod_repo_url }}"
+    dest: "{{ autopod_install_dir }}"
+    version: "{{ autopod_git_branch | default('main') }}"
+    force: false
+  become: false
+  become_user: ec2-user
+  when: autopod_repo_url != ''
+
+- name: Copy project files to control plane when no git repo URL is specified
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../{{ item }}"
+    dest: "{{ autopod_install_dir }}/{{ item }}"
+    owner: ec2-user
+    group: ec2-user
+    mode: "0644"
+  loop:
+    - app.py
+    - auth.py
+    - aws_nodes.py
+    - database.py
+    - deployment_engine.py
+    - docker_manager.py
+    - health_probe.py
+    - node_deployer.py
+    - requirements.txt
+    - version_manager.py
+    - webhook_handler.py
+    - Dockerfile
+    - docker-compose.yml
+  when: autopod_repo_url == ''
+
+- name: Copy frontend directory to control plane when no git repo URL is specified
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../frontend/"
+    dest: "{{ autopod_install_dir }}/frontend/"
+    owner: ec2-user
+    group: ec2-user
+    mode: preserve
+  when: autopod_repo_url == ''
+
+- name: Render the .env file from Ansible variables (never stored in the repo)
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ autopod_install_dir }}/.env"
+    owner: ec2-user
+    group: ec2-user
+    mode: "0600"
+  notify: Restart AutoPod
+
+- name: Render the production Docker Compose override
+  ansible.builtin.template:
+    src: docker-compose.prod.yml.j2
+    dest: "{{ autopod_install_dir }}/docker-compose.prod.yml"
+    owner: ec2-user
+    group: ec2-user
+    mode: "0640"
+  notify: Restart AutoPod
+
+- name: Install the autopod systemd service unit
+  ansible.builtin.template:
+    src: autopod.service.j2
+    dest: /etc/systemd/system/autopod.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd daemon
+    - Restart AutoPod
+
+- name: Ensure the autopod database directory exists on the host
+  ansible.builtin.file:
+    path: "{{ autopod_install_dir }}/database"
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+    mode: "0750"
+
+- name: Ensure the autopod log directory exists on the host
+  ansible.builtin.file:
+    path: "{{ autopod_install_dir }}/logs"
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+    mode: "0750"
+
+- name: Enable and start the AutoPod systemd service
+  ansible.builtin.systemd:
+    name: autopod
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Wait for the AutoPod backend health check to respond directly
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ autopod_backend_port | default(5000) }}/health"
+    method: GET
+    status_code: 200
+    timeout: 10
+  register: health_result
+  retries: 12
+  delay: 10
+  until: health_result.status == 200
+  changed_when: false
+
+- name: Install Nginx reverse proxy
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: Deploy main Nginx configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload Nginx
+
+- name: Deploy AutoPod Nginx reverse proxy configuration
+  ansible.builtin.template:
+    src: autopod_nginx.conf.j2
+    dest: /etc/nginx/conf.d/autopod.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload Nginx
+
+- name: Remove conflicting default Nginx configurations
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d/default.conf
+    state: absent
+  notify: Reload Nginx
+
+- name: Validate Nginx configuration syntax
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: Enable and start Nginx reverse proxy service
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started
+
+- name: Verify Nginx reverse proxy routes public /health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ autopod_nginx_port | default('80') }}/health"
+    method: GET
+    status_code: 200
+    timeout: 10
+  register: proxy_health_result
+  retries: 5
+  delay: 3
+  until: proxy_health_result.status == 200
+  changed_when: false
+

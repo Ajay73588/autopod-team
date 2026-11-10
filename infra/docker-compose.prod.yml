@@ -1,0 +1,37 @@
+# infra/docker-compose.prod.yml
+#
+# Production override for the EC2 deployment target. Use together with the
+# base compose file:
+#
+#   docker compose -f docker-compose.yml -f infra/docker-compose.prod.yml up -d --build
+#
+# This does NOT duplicate the whole stack -- it only overrides the handful
+# of settings that differ between local development and the EC2 target
+# (mainly: disabling the frontend dev-friendly port mapping assumptions and
+# pointing the frontend build at the real public address instead of
+# localhost). Reverse proxy / HTTPS termination (ARCHITECTURE.md Section 11)
+# is intentionally NOT included here -- adding Nginx + a certificate is a
+# manual infrastructure step documented in README.md's AWS section, since it
+# requires a real domain name / certificate the team controls.
+
+services:
+  autopod-backend:
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      - FLASK_ENV=production
+      # FLASK_DEBUG is intentionally not set here -- it must never be "true"
+      # on a publicly reachable instance.
+
+  autopod-frontend:
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
+    # REACT_APP_API_URL is baked in at BUILD time for a static React app,
+    # not at container-start time -- set it in frontend/.env (or pass
+    # --build-arg if the frontend Dockerfile is updated to accept one)
+    # before building this image for EC2, pointing at the instance's real
+    # public address or reverse-proxy domain instead of localhost.

@@ -1,0 +1,97 @@
+services:
+  autopod-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Must match `getent group docker` on the HOST running this compose
+        # file, so the backend's non-root user can use the mounted socket.
+        DOCKER_GID: ${DOCKER_GID:-999}
+    image: autopod-cloud-backend:latest
+    container_name: autopod-backend
+    ports:
+      - "${BACKEND_BIND_HOST:-127.0.0.1}:5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_RUN_HOST=0.0.0.0
+      - ADMIN_API_KEY=${ADMIN_API_KEY:?ADMIN_API_KEY must be set in your .env file}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:?GITHUB_WEBHOOK_SECRET must be set in your .env file}
+      - DOCKER_USERNAME=${DOCKER_USERNAME:-}
+      - DOCKER_PASSWORD=${DOCKER_PASSWORD:-}
+      - DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://frontend:80,http://frontend:3000}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AUTOSCALING_GROUP_NAME=${AUTOSCALING_GROUP_NAME:-autopod-app-nodes-asg}
+      - AUTOPOD_NODE_IP_ATTRIBUTE=${AUTOPOD_NODE_IP_ATTRIBUTE:-private}
+      - AUTOPOD_DEPLOY_SSH_USER=${AUTOPOD_DEPLOY_SSH_USER:-autopod-deploy}
+      - AUTOPOD_DEPLOY_SSH_KEY_PATH=${AUTOPOD_DEPLOY_SSH_KEY_PATH:-}
+      - AUTOPOD_DEPLOY_SSH_TIMEOUT=${AUTOPOD_DEPLOY_SSH_TIMEOUT:-30}
+      - NODE_HEALTH_CHECK_RETRIES=${NODE_HEALTH_CHECK_RETRIES:-8}
+      - NODE_HEALTH_CHECK_DELAY_SECONDS=${NODE_HEALTH_CHECK_DELAY_SECONDS:-1.5}
+      - AUTOPOD_DB_PATH=${AUTOPOD_DB_PATH:-/app/database/autopod.db}
+    volumes:
+      # Mounts the HOST's Docker socket so this backend controls the host's
+      # Docker Engine directly (previously mounted /run/podman/podman.sock).
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./database:/app/database
+      - ./logs:/app/logs
+    group_add:
+      - "${DOCKER_GID:-992}"
+    # `privileged: true` has been removed. Docker socket access already
+    # grants broad host control (see Dockerfile comments); it does not also
+    # need the container itself to run privileged.
+    restart: unless-stopped
+    networks:
+      - autopod-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      # Previously pointed at /api/debug/podman-health, which called a
+      # method that did not exist and always returned 500 -- meaning this
+      # health check could never pass and the frontend (below) could never
+      # start. Fixed endpoint, real health check.
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/debug/docker-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  autopod-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: autopod-cloud-frontend:latest
+    container_name: autopod-frontend
+    ports:
+      - "${FRONTEND_BIND_HOST:-127.0.0.1}:3000:3000"
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-}
+      - DISABLE_ESLINT_PLUGIN=true
+      - ESLINT_NO_DEV_ERRORS=true
+    depends_on:
+      autopod-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - autopod-network
+
+  # Dedicated, isolated reverse proxy for exposing ONLY the webhook endpoint
+  # through a temporary HTTPS tunnel without exposing Flask port 5000.
+  autopod-webhook-proxy:
+    image: nginx:alpine
+    container_name: autopod-webhook-proxy
+    ports:
+      - "${WEBHOOK_INGRESS_BIND_HOST:-127.0.0.1}:${WEBHOOK_INGRESS_PORT:-8080}:8080"
+    volumes:
+      - ./infra/nginx/webhook_ingress.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      autopod-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - autopod-network
+
+networks:
+  autopod-network:
+    driver: bridge
+

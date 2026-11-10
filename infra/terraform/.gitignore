@@ -1,0 +1,13 @@
+# Never commit Terraform state (can contain sensitive values), local
+# override files, or plan output.
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+*.tfplan
+tfplan
+tfplan*

@@ -1,0 +1,21 @@
+---
+# Handlers for autopod role
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart AutoPod
+  ansible.builtin.systemd:
+    name: autopod
+    state: restarted
+
+- name: Restart Nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+
+- name: Reload Nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded
+

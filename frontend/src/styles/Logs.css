@@ -1,0 +1,70 @@
+.logs-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.logs-controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.logs-filter-group {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+}
+
+.logs-filter-group .form-input {
+  min-width: 200px;
+}
+
+.logs-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.logs-container {
+  background: #1f2937;
+  border-radius: 12px;
+  padding: 20px;
+  color: #e5e7eb;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.logs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid #374151;
+}
+
+.log-timestamp {
+  color: #9ca3af;
+  margin-right: 8px;
+}
+
+.log-container {
+  color: #60a5fa;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.log-message {
+  color: #e5e7eb;
+}
+
+.logs-info {
+  margin-top: 12px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+}

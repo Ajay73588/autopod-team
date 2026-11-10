@@ -1,0 +1,110 @@
+# AutoPod Cloud -- Prometheus Configuration Template
+# Discovers Auto Scaling Group application nodes dynamically via AWS EC2 Service Discovery
+# (ec2_sd_configs) or falls back to static inventory targets when ec2_sd is disabled.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+scrape_configs:
+  # -------------------------------------------------------------------------
+  # Control Plane host metrics (local node_exporter)
+  # -------------------------------------------------------------------------
+  - job_name: "control_plane"
+    static_configs:
+      - targets: ["127.0.0.1:{{ node_exporter_port | default(9100) }}"]
+        labels:
+          role: "control-plane"
+          node_name: "autopod-control-plane"
+          environment: "{{ autopod_environment | default('production') }}"
+
+  # -------------------------------------------------------------------------
+  # Application Node host metrics (node_exporter on port 9100)
+  # -------------------------------------------------------------------------
+  - job_name: "node_exporter"
+{% if monitoring_use_ec2_sd | default(true) %}
+    ec2_sd_configs:
+      - region: "{{ aws_region | default('us-east-1') }}"
+        port: {{ node_exporter_port | default(9100) }}
+        refresh_interval: "{{ monitoring_sd_refresh_interval | default('30s') }}"
+        filters:
+          - name: "instance-state-name"
+            values: ["running"]
+          - name: "tag:Role"
+            values: ["{{ monitoring_app_node_tag_role | default('app-node') }}"]
+    relabel_configs:
+      - source_labels: [__meta_ec2_instance_state]
+        regex: "running"
+        action: keep
+      - source_labels: [__meta_ec2_instance_id]
+        target_label: instance_id
+      - source_labels: [__meta_ec2_availability_zone]
+        target_label: availability_zone
+      - source_labels: [__meta_ec2_instance_type]
+        target_label: instance_type
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: node_name
+      - source_labels: [__meta_ec2_tag_Role]
+        target_label: role
+      - source_labels: [__meta_ec2_tag_aws_autoscaling_groupName]
+        target_label: autoscaling_group
+      - target_label: environment
+        replacement: "{{ autopod_environment | default('production') }}"
+      - target_label: job
+        replacement: "node_exporter"
+{% else %}
+    static_configs:
+      - targets:
+{% for host in groups['app_nodes'] | default([]) %}
+          - "{{ hostvars[host]['ansible_host'] }}:{{ node_exporter_port | default(9100) }}"
+{% endfor %}
+        labels:
+          role: "app-node"
+          environment: "{{ autopod_environment | default('production') }}"
+{% endif %}
+
+  # -------------------------------------------------------------------------
+  # Application Node container metrics (cAdvisor on port 8080)
+  # -------------------------------------------------------------------------
+  - job_name: "cadvisor"
+{% if monitoring_use_ec2_sd | default(true) %}
+    ec2_sd_configs:
+      - region: "{{ aws_region | default('us-east-1') }}"
+        port: {{ cadvisor_port | default(8080) }}
+        refresh_interval: "{{ monitoring_sd_refresh_interval | default('30s') }}"
+        filters:
+          - name: "instance-state-name"
+            values: ["running"]
+          - name: "tag:Role"
+            values: ["{{ monitoring_app_node_tag_role | default('app-node') }}"]
+    relabel_configs:
+      - source_labels: [__meta_ec2_instance_state]
+        regex: "running"
+        action: keep
+      - source_labels: [__meta_ec2_instance_id]
+        target_label: instance_id
+      - source_labels: [__meta_ec2_availability_zone]
+        target_label: availability_zone
+      - source_labels: [__meta_ec2_instance_type]
+        target_label: instance_type
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: node_name
+      - source_labels: [__meta_ec2_tag_Role]
+        target_label: role
+      - source_labels: [__meta_ec2_tag_aws_autoscaling_groupName]
+        target_label: autoscaling_group
+      - target_label: environment
+        replacement: "{{ autopod_environment | default('production') }}"
+      - target_label: job
+        replacement: "cadvisor"
+{% else %}
+    static_configs:
+      - targets:
+{% for host in groups['app_nodes'] | default([]) %}
+          - "{{ hostvars[host]['ansible_host'] }}:{{ cadvisor_port | default(8080) }}"
+{% endfor %}
+        labels:
+          role: "app-node"
+          environment: "{{ autopod_environment | default('production') }}"
+{% endif %}

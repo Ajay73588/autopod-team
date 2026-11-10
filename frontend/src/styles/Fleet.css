@@ -1,0 +1,13 @@
+.fleet-page { padding: 1.5rem; max-width: 1000px; }
+.fleet-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+.fleet-card table { width: 100%; border-collapse: collapse; margin-bottom: 0.75rem; }
+.fleet-card th, .fleet-card td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid #edf2f7; font-size: 0.9rem; word-break: break-all; }
+.fleet-form { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.fleet-form input { min-width: 7rem; }
+.fleet-form input, .fleet-card select { padding: 0.4rem 0.6rem; border: 1px solid #cbd5e0; border-radius: 4px; }
+.fleet-card button { padding: 0.4rem 0.9rem; border: 0; border-radius: 4px; background: #2b6cb0; color: #fff; cursor: pointer; }
+.fleet-card button:disabled { opacity: 0.5; cursor: not-allowed; }
+.fleet-msg { padding: 0.6rem 0.9rem; border-radius: 6px; margin-bottom: 1rem; }
+.fleet-msg.ok { background: #f0fff4; color: #276749; }
+.fleet-msg.err { background: #fff5f5; color: #9b2c2c; }
+.fleet-confirm { margin-top: 0.75rem; padding: 0.75rem; background: #fffaf0; border: 1px solid #fbd38d; border-radius: 6px; }

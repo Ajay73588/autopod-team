@@ -1,0 +1,38 @@
+---
+# AutoPod Cloud -- docker role.
+# Installs and enables Docker Engine on any host in this play
+# (control_plane and app_nodes both need it: the control plane runs
+# Prometheus/Grafana as containers and may build images locally; app
+# nodes run the deployed application containers).
+#
+# Targets Amazon Linux 2023 (the AMI family infra/terraform/ec2.tf uses).
+# Idempotent: re-running this role on an already-configured host changes
+# nothing (package install and service enable are both naturally
+# idempotent; the user-group task only appends if not already present).
+
+- name: Install Docker Engine and compose plugin
+  ansible.builtin.dnf:
+    name:
+      - docker
+      - docker-compose-plugin
+    state: present
+  register: docker_install
+
+- name: Enable and start the Docker service
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Add ec2-user to the docker group (so it can run docker without sudo)
+  ansible.builtin.user:
+    name: ec2-user
+    groups: docker
+    append: true
+  notify: Reset ssh connection to pick up new group membership
+
+- name: Verify Docker is actually usable (daemon reachable)
+  ansible.builtin.command: docker info
+  register: docker_info_result
+  changed_when: false
+  failed_when: docker_info_result.rc != 0

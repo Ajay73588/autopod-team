@@ -1,0 +1,19 @@
+flask==2.3.3
+flask-cors==4.0.0
+python-dotenv==1.0.0
+requests==2.31.0
+urllib3==2.0.7
+gunicorn==21.2.0
+pytest==7.4.3
+
+# Required by tests/test_infra_terraform.py (Terraform HCL structural tests)
+# Not needed at runtime -- only at test time, but kept in the single
+# requirements.txt for simplicity (the project does not yet have a
+# separate requirements-dev.txt).
+python-hcl2==4.3.2
+
+# Only required for POST /api/app-nodes/sync (AWS Auto Scaling Group
+# polling, aws_nodes.py). The rest of AutoPod Cloud -- including every
+# other endpoint and the entire local CI/CD pipeline -- does not import
+# boto3 and runs fine without it installed.
+boto3==1.34.162

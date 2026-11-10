@@ -1,0 +1,84 @@
+---
+# AutoPod Cloud -- deployment role (app nodes only).
+# ARCHITECTURE.md Section 5.2/7.3/8: a dedicated, restricted
+# `autopod-deploy` user the control plane uses to SSH in and run deploy
+# commands -- NOT a shared root/ec2-user credential, and NOT an
+# interactive shell account.
+#
+# "Restricted" here means two layers, both applied:
+#   1. A dedicated unprivileged user, in the `docker` group (so it can run
+#      docker commands) but nothing else -- not sudo, not a login shell.
+#   2. The authorized_keys entry for the control plane's deploy key uses a
+#      forced `command=` option, so even if the private key were somehow
+#      misused, it can only ever run the one wrapper script below -- not
+#      an arbitrary shell command.
+
+- name: Create the autopod-deploy system user
+  ansible.builtin.user:
+    name: autopod-deploy
+    system: true
+    shell: /usr/sbin/nologin
+    groups: docker
+    append: true
+    create_home: true
+
+- name: Create .ssh directory for autopod-deploy
+  ansible.builtin.file:
+    path: /home/autopod-deploy/.ssh
+    state: directory
+    owner: autopod-deploy
+    group: autopod-deploy
+    mode: "0700"
+
+- name: Install the restricted deploy wrapper script
+  ansible.builtin.copy:
+    dest: /usr/local/bin/autopod-deploy-wrapper.sh
+    mode: "0755"
+    content: |
+      #!/bin/bash
+      # AutoPod Cloud -- restricted deploy command wrapper.
+      # Invoked ONLY via the forced `command=` in autopod-deploy's
+      # authorized_keys -- SSH_ORIGINAL_COMMAND is whatever the control
+      # plane actually asked for, but only the exact, whitelisted forms
+      # below are ever executed. Anything else is rejected.
+      set -euo pipefail
+      case "$SSH_ORIGINAL_COMMAND" in
+        "docker pull "*|"docker stop "*|"docker rm "*|"docker run "*|"docker ps"*|"docker inspect "*)
+          exec $SSH_ORIGINAL_COMMAND
+          ;;
+        *)
+          echo "autopod-deploy: command not permitted" >&2
+          exit 1
+          ;;
+      esac
+
+  # NOTE: This whitelist intentionally matches exactly the Docker CLI
+  # subcommands deployment_engine.py / docker_manager.py already issue
+  # (build/push happen on the control plane, not here -- app nodes only
+  # ever pull+run an already-built image). Extend it only if a new
+  # subcommand is genuinely needed for multi-node rollout, not
+  # speculatively.
+
+- name: Install the control plane's deploy public key with a forced command
+  ansible.builtin.lineinfile:
+    path: /home/autopod-deploy/.ssh/authorized_keys
+    create: true
+    owner: autopod-deploy
+    group: autopod-deploy
+    mode: "0600"
+    line: >-
+      command="/usr/local/bin/autopod-deploy-wrapper.sh",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty
+      {{ autopod_deploy_public_key | default('REPLACE_WITH_CONTROL_PLANE_DEPLOY_PUBLIC_KEY') }}
+  # autopod_deploy_public_key should be set in group_vars/control_plane
+  # generated on the control plane with `ssh-keygen -t ed25519 -f
+  # ~/.ssh/autopod_deploy_key -N ""` and passed in via
+  # `-e autopod_deploy_public_key="$(cat ~/.ssh/autopod_deploy_key.pub)"`
+  # or a vars file -- never hardcoded here or committed.
+
+- name: Create the AutoPod application working directory
+  ansible.builtin.file:
+    path: /opt/autopod/app
+    state: directory
+    owner: autopod-deploy
+    group: autopod-deploy
+    mode: "0755"

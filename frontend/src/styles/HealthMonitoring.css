@@ -1,0 +1,89 @@
+.health-monitoring {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.health-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.health-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.health-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+}
+
+.health-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.health-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.health-icon {
+  font-size: 1.5rem;
+}
+
+.health-title h3 {
+  margin: 0;
+  color: #1f2937;
+}
+
+.health-status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.health-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.metric-label {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.metric-value {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.health-actions {
+  display: flex;
+  gap: 8px;
+}

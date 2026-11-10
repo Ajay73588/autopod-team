@@ -1,0 +1,19 @@
+[Unit]
+Description=AutoPod Cloud Application (Backend & Frontend)
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory={{ autopod_install_dir }}
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
+ExecStop=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+ExecReload=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.prod.yml restart
+TimeoutStartSec=600
+User=root
+Group=docker
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,114 @@
+# ==============================================================================
+# AutoPod Cloud — Root .gitignore
+# ==============================================================================
+
+# --- Python environments & caches --------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+env/
+venv/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# --- Node.js / React frontend build & dependencies ---------------------------
+node_modules/
+frontend/node_modules/
+frontend/build/
+frontend/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Databases (never commit production or test SQLite DBs) ------------------
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+autopod.db
+database/*.db
+
+# --- Environment files, credentials & private keys ---------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.ppk
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+.dashboard_credentials
+.htpasswd
+*.credentials
+credentials.json
+.aws/
+
+# --- Logs, archives & backups ------------------------------------------------
+logs/
+*.log
+*.tar
+*.tar.gz
+*.zip
+*.b64
+*.bak
+
+# --- IDE, OS & temporary editor files ----------------------------------------
+*.swp
+*.swo
+*.tmp
+*.temp
+tmp/
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# --- Terraform state, plans, providers & local vars --------------------------
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!*.tfvars.json.example
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+tfplan
+tfplan*
+crash.log
+crash.*.log
+
+# --- Temporary deployment/debug scratch artifacts ----------------------------
+scratch/
+ssm_*.json
+update_p1.*
+generate_sync_ssm.py
+create_ingress_tg.py
+direct_health_probe.py
+live_state_verify.*
+live_verify.py
+worker_ecr_pull_policy.json
+CURRENT_STATUS_AND_IMPLEMENTATION_PLAN.md
+FINAL_STATUS_AND_REMAINING_WORK*.md
+PROJECT_PROGRESS*.md

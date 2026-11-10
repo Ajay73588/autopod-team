@@ -1,0 +1,3 @@
+---
+- name: Reset ssh connection to pick up new group membership
+  ansible.builtin.meta: reset_connection
